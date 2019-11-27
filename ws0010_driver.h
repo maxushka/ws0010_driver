@@ -11,7 +11,7 @@
 #define _WS0010_DRIVER_H
 
 //----------------------------------------------------------------------
-
+#include "misc.h"
 #include "stm32f4xx.h"
 #include "stm32f4xx_rcc.h"
 #include "stm32f4xx_gpio.h"
@@ -112,21 +112,38 @@ typedef enum
 	MODE_CONTROL = 0
 } WS0010_RS_Mode_Typedef;
 
+typedef enum
+{
+	EN = 0,
+	RUS = 1
+} TypeChar_Typedef;
+
 //----------------------------------------------------------------------
 
 extern volatile uint32_t _ws0010_timeout;
 
 //----------------------------------------------------------------------
 
-#define ws0010_start_timer()		TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE); TIM_Cmd(TIM3, ENABLE);
-#define ws0010_stop_timer()			TIM_ITConfig(TIM3, TIM_IT_Update, DISABLE); TIM_Cmd(TIM3, DISABLE);
+#define ws0010_start_timer()		{TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE); TIM_Cmd(TIM3, ENABLE);}
+#define ws0010_stop_timer()			{TIM_ITConfig(TIM3, TIM_IT_Update, DISABLE); TIM_Cmd(TIM3, DISABLE);}
+
+#ifdef USE_HAL
+	#define ws0010_write_bit(port, pin, state)		HAL_GPIO_WritePin(port, pin, state)
+	#define ws0010_write_port(port, data) 			HAL_GPIO_Write(port, data)
+	#define ws0010_read_bit(port)					HAL_GPIO_ReadPin(port)
+#else
+	#define ws0010_write_bit(port, pin, state)		GPIO_WriteBit(port, pin, state)
+	#define ws0010_write_port(port, data) 			GPIO_Write(port, data)
+	#define ws0010_read_port(port)					GPIO_ReadInputData(port)
+#endif
+
+#define WS0010_DelayUs()			for(int i = 0; i < 5000; i++)
 
 //----------------------------------------------------------------------
 
 void WS0010_PlatformInit(WS0010_PlatformInit_Typedef *pltf);
-void WS0010_DelayUs(uint32_t ticks);
 void WS0010_Delay(uint32_t ticks);
-void WS0010_SetMode_RW(WS0010_PlatformInit_Typedef *pltf, WS0010_Mode_Typedef mode);
+void WS0010_SetMode_RW(WS0010_PlatformInit_Typedef *pltf, WS0010_RW_Mode_Typedef mode);
 void WS0010_SetMode_RS(WS0010_PlatformInit_Typedef *pltf, WS0010_RS_Mode_Typedef mode);
 void WS0010_Pins_Data_Write(WS0010_PlatformInit_Typedef *pltf, uint8_t data);
 uint8_t WS0010_Pins_Data_Read(WS0010_PlatformInit_Typedef *pltf);
@@ -140,7 +157,7 @@ void WS0010_IsReady(WS0010_PlatformInit_Typedef *pltf);
 void WS0010_Position(WS0010_PlatformInit_Typedef *pltf, uint8_t column, uint8_t row);
 void WS0010_Sleep(WS0010_PlatformInit_Typedef *pltf);
 void WS0010_Wakeup(WS0010_PlatformInit_Typedef *pltf);
-void WS0010_PrintString(WS0010_PlatformInit_Typedef *pltf, char *string);
+void WS0010_PrintString(WS0010_PlatformInit_Typedef *pltf, char *string, TypeChar_Typedef type);
 void WS0010_PrintByte(WS0010_PlatformInit_Typedef *pltf, unsigned char byte);
 char NibbleToAscii(char nibble);
 
